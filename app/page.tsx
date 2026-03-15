@@ -41,25 +41,15 @@ export default function HomePage() {
               Integration Hub
             </span>
           </div>
-          <nav className="flex items-center gap-6 text-sm">
-            <Link
-              href="/docs"
-              className="text-secondary hover:text-primary transition-colors"
-            >
-              Docs
-            </Link>
-            <Link
-              href="/test"
-              className="text-secondary hover:text-primary transition-colors"
-            >
-              Tester
-            </Link>
-            <a
-              href="/api/spec"
-              target="_blank"
-              className="text-secondary hover:text-primary transition-colors flex items-center gap-1.5"
-            >
-              Spec JSON <ExternalLink className="w-3 h-3" />
+          <nav className="flex items-center gap-4 text-sm">
+            <Link href="/docs" className="text-secondary hover:text-primary transition-colors">Docs</Link>
+            <Link href="/test" className="text-secondary hover:text-primary transition-colors">Tester</Link>
+            <Link href="/sandbox" className="text-secondary hover:text-primary transition-colors">Sandbox</Link>
+            <Link href="/validate" className="text-secondary hover:text-primary transition-colors">Validate</Link>
+            <Link href="/status" className="text-secondary hover:text-primary transition-colors">Status</Link>
+            <Link href="/webhook-test" className="text-secondary hover:text-primary transition-colors">Webhooks</Link>
+            <a href="/api/spec" target="_blank" className="text-secondary hover:text-primary transition-colors flex items-center gap-1.5">
+              Spec <ExternalLink className="w-3 h-3" />
             </a>
           </nav>
         </div>

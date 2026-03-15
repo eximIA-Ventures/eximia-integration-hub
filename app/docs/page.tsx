@@ -24,7 +24,8 @@ type Section =
   | "errors"
   | "webhooks"
   | "admin-panel"
-  | "quickstart";
+  | "quickstart"
+  | "changelog";
 
 const sections: { id: Section; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -36,6 +37,7 @@ const sections: { id: Section; label: string }[] = [
   { id: "webhooks", label: "Webhooks" },
   { id: "admin-panel", label: "Admin Panel" },
   { id: "quickstart", label: "Quick Start" },
+  { id: "changelog", label: "Changelog" },
 ];
 
 function CodeBlock({ code }: { code: string }) {
@@ -670,6 +672,7 @@ const isValid = signature === \`sha256=\${expected}\`;`}
                           <div className="flex items-center gap-3">
                             <span className="w-1.5 h-1.5 rounded-full bg-sage shrink-0" />
                             <code className="text-[11px] font-mono text-secondary flex-1">eximia_acad_c3d4...</code>
+                            <span className="p-1 rounded hover:bg-accent/10 cursor-default" title="Copiar key"><Copy className="w-3 h-3 text-accent/50" /></span>
                             <span className="text-[10px] text-muted">read</span>
                             <span className="text-[10px] text-muted/60">3 chamadas/24h</span>
                             <span className="text-[10px] text-accent cursor-default">▸</span>
@@ -681,6 +684,7 @@ const isValid = signature === \`sha256=\${expected}\`;`}
                           <div className="flex items-center gap-3 px-3 py-2.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-sage shrink-0" />
                             <code className="text-[11px] font-mono text-primary flex-1">eximia_hub_a1b2...</code>
+                            <span className="p-1 rounded hover:bg-accent/10 cursor-default" title="Copiar key"><Copy className="w-3 h-3 text-accent/50" /></span>
                             <span className="text-[10px] text-muted">read, write</span>
                             <span className="text-[10px] text-muted/60">47 chamadas/24h</span>
                             <span className="text-[10px] text-accent cursor-default">▾</span>
@@ -1172,6 +1176,44 @@ curl -H "x-eximia-api-key: <sua-key>" \\
                 <p className="text-xs text-primary/80 leading-relaxed">
                   <strong>Dica para agentes:</strong> consuma <code>GET {typeof window !== "undefined" ? window.location.origin : ""}/api/spec</code> para
                   obter a spec completa em JSON e gerar automaticamente os handlers.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Changelog ─────────────────────────────────── */}
+          {active === "changelog" && (
+            <div className="space-y-6 animate-fade-in">
+              <h2 className="text-xl font-display mb-3">Changelog</h2>
+              <p className="text-sm text-secondary mb-4">
+                Histórico de mudanças no contrato universal eximIA.
+              </p>
+
+              <div className="space-y-4">
+                <div className="relative pl-6 border-l-2 border-accent/20">
+                  <div className="absolute -left-[7px] top-1 w-3 h-3 rounded-full bg-accent" />
+                  <div className="mb-1">
+                    <span className="text-sm font-medium text-primary">v1.0.0</span>
+                    <span className="text-xs text-muted ml-2">15 mar 2026</span>
+                    <span className="px-1.5 py-0.5 text-[9px] bg-sage/10 text-sage rounded ml-2">current</span>
+                  </div>
+                  <ul className="text-xs text-secondary space-y-1 leading-relaxed">
+                    <li>Contrato universal definido — 5 endpoints obrigatórios</li>
+                    <li>Autenticação via API key (SHA-256, scoped)</li>
+                    <li>Paginação padrão com meta (total, page, limit, pages)</li>
+                    <li>Formato de erro padronizado (error, code, details)</li>
+                    <li>Webhooks com HMAC-SHA256 e retry exponencial</li>
+                    <li>Admin Panel spec — inbound/outbound architecture</li>
+                    <li>Schema Validator, Contract Tester, Sandbox, Status, Webhook Tester</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-4 bg-surface/30 border border-[rgba(232,224,213,0.04)] rounded-md">
+                <p className="text-xs text-muted leading-relaxed">
+                  <strong>Política de versionamento:</strong> adições backward-compatible não mudam a versão.
+                  Breaking changes requerem nova versão do contrato (v2). O header{" "}
+                  <code>x-eximia-contract-version</code> identifica a versão em uso.
                 </p>
               </div>
             </div>
