@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* ─── Backgrounds ─── */
+  --c-bg: 10 10 10;
+  --c-surface: 17 17 17;
+  --c-elevated: 26 26 26;
+  --c-border: 42 42 42;
+
+  /* ─── Text (Cream Scale) ─── */
+  --c-primary: 232 224 213;
+  --c-secondary: 184 176 165;
+  --c-muted: 102 102 102;
+
+  /* ─── Accent (Warm Brown) ─── */
+  --c-accent: 196 168 130;
+  --c-accent-dim: 139 115 85;
+  --c-accent-hover: 212 188 154;
+
+  /* ─── Accent Alt (Sage Green) ─── */
+  --c-sage: 124 158 143;
+
+  /* ─── Semantic ─── */
+  --c-success: 75 149 96;
+  --c-warning: 246 166 9;
+  --c-danger: 239 68 68;
+  --c-info: 42 106 176;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: rgb(var(--c-bg));
+  color: rgb(var(--c-primary));
+  font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar (4px, eximIA standard) ─── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-border));
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* ─── Focus ─── */
+*:focus-visible {
+  outline: 2px solid rgb(var(--c-accent));
+  outline-offset: 2px;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgb(var(--c-accent) / 0.2);
+  color: rgb(var(--c-primary));
+}
+
+/* ─── Animations ─── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ─── Glass Panel (eximIA signature) ─── */
+.glass-panel {
+  background: rgba(17, 17, 17, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(232, 224, 213, 0.05);
+}
+
+/* ─── Glow Effects ─── */
+.glow-accent {
+  box-shadow:
+    0 0 20px color-mix(in srgb, #C4A882 15%, transparent),
+    inset 0 0 20px color-mix(in srgb, #C4A882 5%, transparent);
+}
+
+/* ─── Code blocks ─── */
+pre {
+  background: rgb(var(--c-surface));
+  border: 1px solid rgba(232, 224, 213, 0.05);
+  border-radius: 12px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: rgb(var(--c-secondary));
+}
+
+code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875em;
+  background: rgba(232, 224, 213, 0.05);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  color: rgb(var(--c-accent));
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* ─── Dot Grid (eximIA signature bg pattern) ─── */
+.dot-grid {
+  background-image: radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0);
+  background-size: 40px 40px;
+  opacity: 0.03;
+}
