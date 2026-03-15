@@ -1,0 +1,35 @@
+# eximIA Integration Hub
+
+> Universal integration contract for the eximIA ecosystem
+
+## Docs
+
+- [Contract Spec (JSON)](/api/spec): Machine-readable contract specification — full endpoint definitions, schemas, auth, pagination, errors, webhooks, and admin panel implementation guide
+- [Documentation](/docs): Interactive human-readable documentation with 10 sections
+- [Full Spec](/llms-full.txt): Complete contract specification in plain text for LLM consumption
+
+## Tools
+
+- [Contract Tester](/test): Discover app catalogs and test operations
+- [Sandbox](/sandbox): Pull real data from connected apps
+- [Schema Validator](/validate): Validate catalog JSON against contract v1
+- [Ecosystem Status](/status): Monitor app availability
+- [Webhook Tester](/webhook-test): Send test webhooks with HMAC-SHA256
+
+## Overview
+
+The eximIA Integration Contract v1 defines how apps in the eximIA ecosystem communicate. Any app implementing 5 endpoints becomes automatically connectable to any other — present or future — with zero hardcoding, no intermediary, and no package dependency.
+
+### Endpoints
+
+- `GET /api/v1/integration/catalog` — Discovery: returns entities, schemas, operations
+- `GET /api/v1/integration/:entity` — List paginated data
+- `POST /api/v1/integration/:entity` — Create record
+- `GET /api/v1/integration/:entity/:id` — Get individual record
+- `PUT /api/v1/integration/:entity/:id` — Update record
+
+### Auth
+
+Header: `x-eximia-api-key: eximia_<app>_<random32>`
+Scopes: read, write, admin
+Storage: SHA-256 hash (never raw key)

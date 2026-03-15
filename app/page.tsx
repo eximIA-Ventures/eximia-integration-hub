@@ -9,7 +9,14 @@ import {
   Link2,
   Key,
   Webhook,
+  ChevronDown,
+  FlaskConical,
+  CheckCircle2,
+  Activity,
+  Send,
+  Database,
 } from "lucide-react";
+import { NavDropdown } from "@/components/nav-dropdown";
 
 export default function HomePage() {
   return (
@@ -41,13 +48,9 @@ export default function HomePage() {
               Integration Hub
             </span>
           </div>
-          <nav className="flex items-center gap-4 text-sm">
+          <nav className="flex items-center gap-5 text-sm">
             <Link href="/docs" className="text-secondary hover:text-primary transition-colors">Docs</Link>
-            <Link href="/test" className="text-secondary hover:text-primary transition-colors">Tester</Link>
-            <Link href="/sandbox" className="text-secondary hover:text-primary transition-colors">Sandbox</Link>
-            <Link href="/validate" className="text-secondary hover:text-primary transition-colors">Validate</Link>
-            <Link href="/status" className="text-secondary hover:text-primary transition-colors">Status</Link>
-            <Link href="/webhook-test" className="text-secondary hover:text-primary transition-colors">Webhooks</Link>
+            <NavDropdown />
             <a href="/api/spec" target="_blank" className="text-secondary hover:text-primary transition-colors flex items-center gap-1.5">
               Spec <ExternalLink className="w-3 h-3" />
             </a>

@@ -1,0 +1,266 @@
+# eximIA Integration Contract v1 — Full Specification
+
+## Contract ID
+eximia-integration/v1
+
+## Description
+Universal contract for inter-app integration in the eximIA ecosystem. Any app implementing these endpoints becomes automatically connectable to any other — present or future — with zero hardcoding, no intermediary, and no package dependency.
+
+## Base Path
+/api/v1/integration
+
+---
+
+## Authentication
+
+Type: API Key
+Header: x-eximia-api-key
+Format: eximia_<app>_<random32>
+Hash: SHA-256 (never store raw key)
+
+### Scopes
+- read: List and fetch entities (GET)
+- write: Create and update records (POST, PUT)
+- admin: Full access + webhooks + configuration
+
+Each app manages its own API keys. The Hub does NOT centralize key management.
+
+---
+
+## Endpoints
+
+### GET /catalog
+Returns app metadata, exposed entities with schemas, operations, and webhook events.
+Auth: required (scope: read)
+
+Response:
+```json
+{
+  "app": "string — app identifier slug",
+  "version": "string — implementation version",
+  "contract": "eximia-integration/v1",
+  "entities": {
+    "<entity_name>": {
+      "operations": ["list", "get", "create", "update"],
+      "schema": {
+        "<field>": { "type": "string|number|boolean|object|array|datetime", "readonly": true, "required": true, "description": "..." }
+      },
+      "description": "string"
+    }
+  },
+  "webhooks": {
+    "available_events": ["entity.action"]
+  }
+}
+```
+
+### GET /:entity
+Lists paginated data of an entity.
+Auth: required (scope: read)
+Query: page (default 1), limit (default 20, max 100)
+
+Response:
+```json
+{
+  "data": [...],
+  "meta": { "total": 100, "page": 1, "limit": 20, "pages": 5 }
+}
+```
+
+### POST /:entity
+Creates a record.
+Auth: required (scope: write)
+Body: entity fields per schema (excluding readonly)
+
+Response:
+```json
+{ "data": { ...created record } }
+```
+
+### GET /:entity/:id
+Fetches individual record.
+Auth: required (scope: read)
+
+Response:
+```json
+{ "data": { ...record } }
+```
+
+### PUT /:entity/:id
+Updates individual record.
+Auth: required (scope: write)
+Body: partial entity fields (excluding readonly)
+
+Response:
+```json
+{ "data": { ...updated record } }
+```
+
+---
+
+## Errors
+
+Format:
+```json
+{
+  "error": "human-readable message",
+  "code": "MACHINE_CODE",
+  "details": {}
+}
+```
+
+Codes:
+- UNAUTHORIZED (401): Missing or invalid API key
+- FORBIDDEN (403): Key lacks required scope
+- ENTITY_NOT_FOUND (404): Entity not exposed
+- RECORD_NOT_FOUND (404): Record not found
+- VALIDATION_ERROR (422): Body validation failed
+- RATE_LIMITED (429): Too many requests
+- INTERNAL_ERROR (500): Unexpected error
+
+---
+
+## Webhooks
+
+Registration: POST /api/v1/integration/webhooks
+Signature header: x-eximia-signature
+Algorithm: HMAC-SHA256
+Retry: 3 attempts (1s, 5s, 30s exponential backoff)
+On 3 consecutive failures: webhook auto-disabled
+
+Payload:
+```json
+{
+  "event": "entity.action",
+  "app": "source-app",
+  "entity": "entity_name",
+  "record_id": "uuid",
+  "data": { ...record },
+  "timestamp": "ISO 8601"
+}
+```
+
+Signature verification:
+```
+expected = HMAC-SHA256(secret, JSON.stringify(body))
+valid = header === "sha256=" + expected
+```
+
+---
+
+## Versioning
+
+Header: x-eximia-contract-version
+Current: v1
+Policy: Backward-compatible additions only. Breaking changes require new version.
+
+---
+
+## Admin Panel Implementation
+
+Every app MUST have /settings/integrations with:
+
+### Architecture
+- INBOUND: Other apps call YOUR endpoints. Managed via API keys you create for them.
+- OUTBOUND: YOU call other apps. Managed via connections storing remote URL + encrypted key.
+
+### Database Tables
+
+#### integration_keys (inbound auth)
+- id: uuid primary key
+- app_name: text not null
+- key_prefix: text not null (first 16 chars)
+- key_hash: text not null unique (SHA-256)
+- scopes: text[] default '{read}'
+- status: text default 'active' (active|revoked)
+- last_used: timestamptz
+- expires_at: timestamptz
+- created_at: timestamptz
+
+#### integration_outbound (outbound connections)
+- id: uuid primary key
+- remote_app: text not null
+- remote_url: text not null
+- api_key_encrypted: text not null
+- status: text default 'active' (active|error|pending|disabled)
+- entities: text[] default '{}'
+- catalog_cache: jsonb
+- last_sync: timestamptz
+- last_error: text
+- created_at: timestamptz
+
+#### integration_logs (all calls)
+- id: uuid primary key
+- direction: text not null (inbound|outbound)
+- method: text not null
+- endpoint: text not null
+- entity: text
+- status_code: int not null
+- duration_ms: int not null
+- remote_app: text
+- created_at: timestamptz
+
+### File Structure
+- app/settings/integrations/page.tsx — Admin panel (3 tabs: Keys, Connections, Logs)
+- app/api/v1/integration/[...path]/route.ts — Contract endpoints (inbound)
+- app/api/integrations/keys/route.ts — CRUD API keys
+- app/api/integrations/keys/[id]/route.ts — Revoke key
+- app/api/integrations/connections/route.ts — List/create outbound connections
+- app/api/integrations/connections/[id]/route.ts — Remove/test connection
+- app/api/integrations/discover/route.ts — Discovery proxy
+- lib/integration/auth.ts — API key validation middleware
+- lib/integration/catalog.ts — App's catalog definition
+- lib/integration/helpers.ts — hashKey(), generateKey(), decrypt()
+- lib/integration/fetch.ts — integrationFetch() with auto-logging
+
+### Visual Spec
+- Dark theme: bg #0A0A0A, surface #111111, text cream #E8E0D5
+- Status dots: green (active), yellow (pending), red (error), gray (disabled)
+- Method badges: GET sage/green, POST accent/brown, PUT warning/yellow, DELETE danger/red
+- Log direction: ↓ blue (inbound), ↑ gold (outbound)
+- Fonts: Inter (UI), JetBrains Mono (code/keys), Playfair Display (headings)
+- Key display: prefix only (16 chars + ...), copy button on every row
+- Expandable rows: collapsed summary → expanded detail with entity toggles/checkboxes
+
+---
+
+## Examples
+
+### Catalog Response
+```json
+{
+  "app": "eximia-forms",
+  "version": "1.0.0",
+  "contract": "eximia-integration/v1",
+  "entities": {
+    "forms": {
+      "operations": ["list", "get"],
+      "schema": {
+        "id": { "type": "string", "readonly": true },
+        "title": { "type": "string", "required": true },
+        "status": { "type": "string" },
+        "created_at": { "type": "datetime", "readonly": true }
+      }
+    },
+    "submissions": {
+      "operations": ["list", "get", "create"],
+      "schema": {
+        "id": { "type": "string", "readonly": true },
+        "form_id": { "type": "string", "required": true },
+        "data": { "type": "object", "required": true },
+        "created_at": { "type": "datetime", "readonly": true }
+      }
+    }
+  }
+}
+```
+
+### Quick Start (Next.js App Router)
+
+1. Create catch-all route: app/api/v1/integration/[...path]/route.ts
+2. Define your catalog with entities and schemas
+3. Validate x-eximia-api-key header on every request
+4. Return paginated responses with { data, meta } format
+5. Create admin panel at /settings/integrations
+
+For agents: consume GET /api/spec for the full JSON specification.

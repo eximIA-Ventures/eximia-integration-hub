@@ -102,6 +102,111 @@ function Endpoint({
   );
 }
 
+function TryItConsole() {
+  const [tryUrl, setTryUrl] = useState("");
+  const [tryKey, setTryKey] = useState("");
+  const [tryPath, setTryPath] = useState("/api/v1/integration/catalog");
+  const [tryMethod, setTryMethod] = useState("GET");
+  const [tryResult, setTryResult] = useState<{ status: number; body: unknown } | null>(null);
+  const [tryLoading, setTryLoading] = useState(false);
+  const [tryCopied, setTryCopied] = useState(false);
+
+  async function tryIt() {
+    if (!tryUrl.trim() || !tryKey.trim()) return;
+    setTryLoading(true);
+    setTryResult(null);
+
+    try {
+      const fullUrl = tryUrl.replace(/\/$/, "") + tryPath;
+      const res = await fetch("/api/test-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: fullUrl, method: tryMethod, api_key: tryKey }),
+      });
+      const data = await res.json();
+      setTryResult({ status: data.status, body: data.body });
+    } catch {
+      setTryResult({ status: 0, body: { error: "Network error" } });
+    } finally {
+      setTryLoading(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 p-5 bg-[#0D0D0D] border border-accent/10 rounded-md">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-accent/10 text-accent rounded">Try It</span>
+        <span className="text-xs text-muted">Teste direto na documentação</span>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-2 mb-3">
+        <input
+          type="url"
+          value={tryUrl}
+          onChange={(e) => setTryUrl(e.target.value)}
+          placeholder="http://localhost:3000"
+          className="px-3 py-2 bg-bg border border-[rgba(232,224,213,0.08)] rounded text-xs text-primary placeholder:text-muted/40 focus:border-accent/50 focus:outline-none"
+        />
+        <input
+          type="password"
+          value={tryKey}
+          onChange={(e) => setTryKey(e.target.value)}
+          placeholder="x-eximia-api-key"
+          className="px-3 py-2 bg-bg border border-[rgba(232,224,213,0.08)] rounded text-xs font-mono text-primary placeholder:text-muted/40 focus:border-accent/50 focus:outline-none"
+        />
+      </div>
+
+      <div className="flex gap-2 mb-3">
+        <select
+          value={tryMethod}
+          onChange={(e) => setTryMethod(e.target.value)}
+          className="px-2 py-2 bg-bg border border-[rgba(232,224,213,0.08)] rounded text-xs text-primary focus:border-accent/50 focus:outline-none w-20"
+        >
+          <option>GET</option>
+          <option>POST</option>
+          <option>PUT</option>
+        </select>
+        <input
+          type="text"
+          value={tryPath}
+          onChange={(e) => setTryPath(e.target.value)}
+          className="flex-1 px-3 py-2 bg-bg border border-[rgba(232,224,213,0.08)] rounded text-xs font-mono text-primary focus:border-accent/50 focus:outline-none"
+        />
+        <button
+          onClick={tryIt}
+          disabled={!tryUrl.trim() || !tryKey.trim() || tryLoading}
+          className="px-4 py-2 bg-accent text-bg text-xs font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-40"
+        >
+          {tryLoading ? "..." : "Enviar"}
+        </button>
+      </div>
+
+      {tryResult && (
+        <div className="animate-fade-in">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className={`text-xs font-mono ${tryResult.status >= 200 && tryResult.status < 300 ? "text-sage" : "text-danger"}`}>
+              HTTP {tryResult.status}
+            </span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(tryResult.body, null, 2));
+                setTryCopied(true);
+                setTimeout(() => setTryCopied(false), 2000);
+              }}
+              className="text-[10px] text-muted hover:text-accent transition-colors"
+            >
+              {tryCopied ? "✓ Copiado" : "Copiar"}
+            </button>
+          </div>
+          <pre className="text-[11px] max-h-60 overflow-auto !bg-bg !border-[rgba(232,224,213,0.04)]">
+            <code>{JSON.stringify(tryResult.body, null, 2)}</code>
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DocsPage() {
   const [active, setActive] = useState<Section>("overview");
 
@@ -299,6 +404,9 @@ export async function validateApiKey(request: Request) {
                 <Endpoint method="GET" path="/api/v1/integration/:entity/:id" description="Busca um registro individual por ID" scope="read" />
                 <Endpoint method="PUT" path="/api/v1/integration/:entity/:id" description="Atualiza um registro individual" scope="write" />
               </div>
+
+              {/* Try It Inline */}
+              <TryItConsole />
 
               <div className="mt-6">
                 <h3 className="text-sm font-medium text-primary mb-2">Route handler (Next.js App Router)</h3>

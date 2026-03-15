@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -28,10 +28,21 @@ interface AppStatus {
 }
 
 export default function StatusPage() {
-  const [apps, setApps] = useState<AppStatus[]>([]);
+  const [apps, setApps] = useState<AppStatus[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("eximia-hub-status");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [showAdd, setShowAdd] = useState(false);
   const [newUrl, setNewUrl] = useState("");
   const [checking, setChecking] = useState(false);
+
+  // Persist to localStorage
+  useEffect(() => {
+    localStorage.setItem("eximia-hub-status", JSON.stringify(apps));
+  }, [apps]);
 
   async function checkApp(app: AppStatus): Promise<AppStatus> {
     try {
