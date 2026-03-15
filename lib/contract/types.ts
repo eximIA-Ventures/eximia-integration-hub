@@ -186,6 +186,178 @@ export const CONTRACT_SPEC = {
       "Backward-compatible additions only. Breaking changes require a new contract version.",
   },
 
+  admin_panel: {
+    description:
+      "Every app implementing the contract MUST have an admin page at /settings/integrations to manage API keys, outbound connections, and monitor logs. The panel covers BOTH sides: inbound (other apps calling you) and outbound (you calling other apps).",
+    route: "/settings/integrations",
+    architecture: {
+      inbound: {
+        description:
+          "Other apps call YOUR endpoints. You manage the API keys you give them and monitor received calls.",
+        managed_via: "API Keys — each active key represents an app that has access to your endpoints",
+      },
+      outbound: {
+        description:
+          "YOU call other apps' endpoints. You store the API keys they gave you and monitor your outgoing calls.",
+        managed_via: "Outbound connections — each connection stores remote URL + encrypted key + selected entities",
+        discovery_flow: [
+          "Admin enters remote app URL + API key",
+          "App calls GET <url>/api/v1/integration/catalog",
+          "Validates contract === 'eximia-integration/v1'",
+          "Displays discovered entities with operations",
+          "Admin selects which entities to consume",
+          "Saves connection with key and selected entities",
+        ],
+      },
+    },
+    sections: [
+      {
+        name: "API Keys (Inbound)",
+        description: "Create, list, and revoke API keys for other apps to call your endpoints",
+        features: [
+          "Create key: app_name, scopes (read/write/admin), optional expiration",
+          "Key format: eximia_<app>_<random32>",
+          "Display key ONCE on creation with copy button (never shown again)",
+          "Store SHA-256 hash in database (never raw key)",
+          "List keys: prefix, app, scopes, last_used, status",
+          "Revoke key: soft delete (status = 'revoked')",
+        ],
+      },
+      {
+        name: "Connections (Outbound)",
+        description: "Manage apps you call — discovery, entity selection, testing",
+        features: [
+          "Discovery flow: URL + key → /catalog → validate → select entities → save",
+          "Per-connection detail panel showing discovered entities with checkboxes",
+          "Test connection: calls remote /catalog to verify it's alive",
+          "Re-discover: refresh catalog to pick up new entities",
+          "Remove connection with confirmation",
+        ],
+      },
+      {
+        name: "Connections (Inbound - automatic)",
+        description: "View apps that call you — derived from active API keys + logs",
+        features: [
+          "Auto-populated from active API keys (each key = one caller app)",
+          "Shows: app_name, scopes, last_used, calls in last 24h",
+          "Per-key detail panel with entity-level permission toggles",
+          "Revoke key to block an app",
+        ],
+      },
+      {
+        name: "Logs",
+        description: "All integration calls — both inbound and outbound",
+        features: [
+          "Direction indicator: ↓ inbound (received), ↑ outbound (sent)",
+          "Columns: direction, method, endpoint, status_code, duration_ms, remote_app, timestamp",
+          "Filter by direction (All / Inbound / Outbound)",
+          "Color coding: 2xx green, 4xx yellow, 5xx red",
+          "Last 100 entries with scroll",
+        ],
+      },
+    ],
+    database_schemas: {
+      integration_keys: {
+        description: "API keys you give to OTHER apps (inbound auth)",
+        columns: {
+          id: "uuid primary key default gen_random_uuid()",
+          app_name: "text not null — who will use this key",
+          key_prefix: "text not null — first 16 chars for display",
+          key_hash: "text not null unique — SHA-256 hash",
+          scopes: "text[] not null default '{read}'",
+          status: "text default 'active' check (status in ('active', 'revoked'))",
+          last_used: "timestamptz",
+          expires_at: "timestamptz",
+          created_at: "timestamptz default now()",
+        },
+      },
+      integration_outbound: {
+        description: "Apps YOU call (outbound connections)",
+        columns: {
+          id: "uuid primary key default gen_random_uuid()",
+          remote_app: "text not null — remote app identifier",
+          remote_url: "text not null — base URL of remote app",
+          api_key_encrypted: "text not null — key the remote app gave you",
+          status: "text default 'active' check (status in ('active', 'error', 'pending', 'disabled'))",
+          entities: "text[] not null default '{}' — selected entities to consume",
+          catalog_cache: "jsonb — last /catalog response",
+          last_sync: "timestamptz",
+          last_error: "text",
+          created_at: "timestamptz default now()",
+        },
+      },
+      integration_logs: {
+        description: "All integration calls — inbound AND outbound",
+        columns: {
+          id: "uuid primary key default gen_random_uuid()",
+          direction: "text not null — 'inbound' or 'outbound'",
+          method: "text not null — GET, POST, PUT",
+          endpoint: "text not null — /api/v1/integration/...",
+          entity: "text — entity name if applicable",
+          status_code: "int not null",
+          duration_ms: "int not null",
+          remote_app: "text — caller (inbound) or callee (outbound)",
+          created_at: "timestamptz default now()",
+        },
+      },
+    },
+    file_structure: {
+      description: "Required file structure in each app implementing the contract",
+      files: {
+        "app/settings/integrations/page.tsx":
+          "Admin panel page (client component with 3 tabs: Keys, Connections, Logs)",
+        "app/api/v1/integration/[...path]/route.ts":
+          "Catch-all route handler for the contract endpoints (inbound)",
+        "app/api/integrations/keys/route.ts":
+          "CRUD for API keys (POST create, GET list)",
+        "app/api/integrations/keys/[id]/route.ts":
+          "DELETE to revoke a key",
+        "app/api/integrations/connections/route.ts":
+          "GET list outbound connections, POST create new",
+        "app/api/integrations/connections/[id]/route.ts":
+          "DELETE remove, POST test connection",
+        "app/api/integrations/discover/route.ts":
+          "POST discovery — calls remote /catalog and validates contract",
+        "lib/integration/auth.ts":
+          "Middleware to validate x-eximia-api-key header + log inbound calls",
+        "lib/integration/catalog.ts":
+          "This app's catalog definition (entities, schemas, operations)",
+        "lib/integration/helpers.ts":
+          "hashKey(), generateKey(), decrypt() utilities",
+        "lib/integration/fetch.ts":
+          "integrationFetch() — outbound fetch wrapper with auto-logging",
+      },
+    },
+    visual_spec: {
+      theme: "Follow eximIA dark theme — bg #0A0A0A, surface #111111, text cream #E8E0D5",
+      status_indicators: {
+        active: "● green dot + 'Conectado'",
+        pending: "● yellow dot + 'Pendente'",
+        error: "○ red dot + error message",
+        disabled: "○ gray dot + 'Desabilitado'",
+      },
+      method_badges: {
+        GET: "sage/green background",
+        POST: "accent/brown background",
+        PUT: "warning/yellow background",
+        DELETE: "danger/red background",
+      },
+      log_direction: {
+        inbound: "↓ blue arrow — other app called YOU",
+        outbound: "↑ gold arrow — YOU called other app",
+      },
+      fonts: {
+        ui: "Inter",
+        code: "JetBrains Mono (keys, endpoints, logs)",
+        headings: "Playfair Display (section titles)",
+      },
+      key_display: "Show only prefix (first 16 chars) + '...' — never show full key after creation",
+      borders: "rgba(232,224,213,0.04) for cards, 0.06 for dividers — never pure white",
+      expandable_rows:
+        "Each key/connection row is expandable. Collapsed: summary line. Expanded: detail panel with entity toggles (inbound) or entity checkboxes (outbound), actions, metadata.",
+    },
+  },
+
   examples: {
     catalog_response: {
       app: "eximia-forms",
