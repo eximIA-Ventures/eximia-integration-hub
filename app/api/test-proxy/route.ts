@@ -10,6 +10,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Sanitize — strip non-ASCII chars that break HTTP headers
+  const cleanKey = api_key.replace(/[^\x20-\x7E]/g, "").trim();
+
+  if (!cleanKey) {
+    return NextResponse.json(
+      { status: 422, body: { error: "API key contains invalid characters" } },
+      { status: 200 }
+    );
+  }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15_000);
@@ -17,7 +27,7 @@ export async function POST(request: NextRequest) {
     const res = await fetch(url, {
       method: method || "GET",
       headers: {
-        "x-eximia-api-key": api_key,
+        "x-eximia-api-key": cleanKey,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
@@ -40,9 +50,11 @@ export async function POST(request: NextRequest) {
     if (err instanceof Error && err.name === "AbortError") {
       return NextResponse.json({ status: 504, body: { error: "Timeout (15s)" } });
     }
+    const message = err instanceof Error ? err.message : "Network error";
+    const cause = err instanceof Error && err.cause ? String(err.cause) : undefined;
     return NextResponse.json({
       status: 0,
-      body: { error: err instanceof Error ? err.message : "Network error" },
+      body: { error: message, cause, hint: "If 'fetch failed', the Hub server cannot reach the target URL. Check if the domain is publicly accessible." },
     });
   }
 }
