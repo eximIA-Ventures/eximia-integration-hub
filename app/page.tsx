@@ -46,7 +46,13 @@ export default function HomePage() {
               href="/docs"
               className="text-secondary hover:text-primary transition-colors"
             >
-              Documentação
+              Docs
+            </Link>
+            <Link
+              href="/test"
+              className="text-secondary hover:text-primary transition-colors"
+            >
+              Tester
             </Link>
             <a
               href="/api/spec"
