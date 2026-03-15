@@ -217,10 +217,10 @@ export const CONTRACT_SPEC = {
         features: [
           "Create key: app_name, scopes (read/write/admin), optional expiration",
           "Key format: eximia_<app>_<random32>",
-          "Display key ONCE on creation with copy button (never shown again)",
+          "On creation: show full key in a highlighted banner with a COPY BUTTON (click-to-copy). This is the ONLY time the full key is visible — warn the user clearly",
           "Store SHA-256 hash in database (never raw key)",
-          "List keys: prefix, app, scopes, last_used, status",
-          "Revoke key: soft delete (status = 'revoked')",
+          "List keys: prefix, app, scopes, last_used, status — each row has a copy button that copies the prefix (for reference/identification, not for auth)",
+          "Revoke key: soft delete (status = 'revoked') with confirmation dialog",
         ],
       },
       {
@@ -352,6 +352,7 @@ export const CONTRACT_SPEC = {
         headings: "Playfair Display (section titles)",
       },
       key_display: "Show only prefix (first 16 chars) + '...' — never show full key after creation",
+      copy_buttons: "Every key row and the creation banner MUST have a copy-to-clipboard button (icon: clipboard/copy). On creation banner: copies full key. On list rows: copies prefix. Visual feedback: icon changes to checkmark for 2 seconds after copy.",
       borders: "rgba(232,224,213,0.04) for cards, 0.06 for dividers — never pure white",
       expandable_rows:
         "Each key/connection row is expandable. Collapsed: summary line. Expanded: detail panel with entity toggles (inbound) or entity checkboxes (outbound), actions, metadata.",
